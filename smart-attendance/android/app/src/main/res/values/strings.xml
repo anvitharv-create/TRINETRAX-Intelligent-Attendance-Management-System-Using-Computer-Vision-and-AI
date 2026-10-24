@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">TrinetraX</string>
+    <string name="login_title">TrinetraX</string>
+    <string name="login_subtitle">Smart Attendance System</string>
+</resources>
