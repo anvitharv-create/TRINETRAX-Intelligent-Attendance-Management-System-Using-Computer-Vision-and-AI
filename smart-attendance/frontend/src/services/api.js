@@ -1,13 +1,13 @@
+
 import axios from "axios";
 
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
 
 export const api = axios.create({
   baseURL: API_BASE,
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach auth token automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("access_token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -57,9 +57,7 @@ export const studentsApi = {
 };
 
 export const teachersApi = {
-  list: (branch = "") => {
-    return api.get(`/teachers${branch ? `?branch=${branch}` : ""}`).then((r) => r.data);
-  },
+  list: (branch = "") => api.get(`/teachers${branch ? `?branch=${encodeURIComponent(branch)}` : ""}`).then((r) => r.data),
   create: (teacher) => api.post("/teachers", teacher).then((r) => r.data),
   update: (id, data) => api.put(`/teachers/${id}`, data).then((r) => r.data),
   remove: (id) => api.delete(`/teachers/${id}`).then((r) => r.data),
@@ -87,23 +85,18 @@ export const attendanceApi = {
     if (end_date) params.push(`end_date=${end_date}`);
     return api.get(`/attendance${params.length ? `?${params.join("&")}` : ""}`).then((r) => r.data);
   },
-  student: (student_id) =>
-    api.get(`/attendance/student/${student_id}`).then((r) => r.data),
-  update: (id, status, confidence) =>
-    api.put(`/attendance/${id}`, { status, confidence }).then((r) => r.data),
+  student: (student_id) => api.get(`/attendance/student/${student_id}`).then((r) => r.data),
+  update: (id, status, confidence) => api.put(`/attendance/${id}`, { status, confidence }).then((r) => r.data),
   remove: (id) => api.delete(`/attendance/${id}`).then((r) => r.data),
 };
 
 export const notificationsApi = {
-  list: (user_id, unreadOnly = false) => {
-    const qs = unreadOnly ? "?unread_only=true" : "";
-    return api.get(`/notifications/${user_id}${qs}`).then((r) => r.data);
-  },
+  list: (user_id, unreadOnly = false) => api.get(`/notifications/${user_id}${unreadOnly ? "?unread_only=true" : ""}`).then((r) => r.data),
   markRead: (id) => api.put(`/notifications/${id}/read`).then((r) => r.data),
 };
 
 export const analyticsApi = {
-  overall: () => api.get(`/analytics/overall`).then((r) => r.data),
+  overall: () => api.get("/analytics/overall").then((r) => r.data),
   semester: (semester) => api.get(`/analytics/semester/${encodeURIComponent(semester)}`).then((r) => r.data),
   reports: (filters = {}) => {
     const qs = new URLSearchParams(filters).toString();
@@ -119,11 +112,9 @@ export const teacherApi = {
     ).toString();
     return api.get(`/teacher/reports/attendance${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
-  notifyEligible: (channel = "whatsapp") =>
-    api.get("/teacher/reports/notify/eligible", { params: { channel } }).then((r) => r.data),
+  notifyEligible: (channel = "whatsapp") => api.get("/teacher/reports/notify/eligible", { params: { channel } }).then((r) => r.data),
   notifyStart: (payload) => api.post("/teacher/reports/notify", payload).then((r) => r.data),
-  notifyBatch: (batchId) =>
-    api.get(`/teacher/reports/notify/batch/${encodeURIComponent(batchId)}`).then((r) => r.data),
+  notifyBatch: (batchId) => api.get(`/teacher/reports/notify/batch/${encodeURIComponent(batchId)}`).then((r) => r.data),
 };
 
 export const studentReportApi = {
@@ -137,9 +128,7 @@ export const studentReportApi = {
     const qs = new URLSearchParams(
       Object.entries(filters).filter(([, v]) => v !== null && v !== undefined && v !== "")
     ).toString();
-    return api
-      .get(`/student/report/pdf${qs ? `?${qs}` : ""}`, { responseType: "blob" })
-      .then((r) => r.data);
+    return api.get(`/student/report/pdf${qs ? `?${qs}` : ""}`, { responseType: "blob" }).then((r) => r.data);
   },
 };
 
@@ -154,64 +143,47 @@ export const hodReportApi = {
     const qs = new URLSearchParams(
       Object.entries(filters).filter(([, v]) => v !== null && v !== undefined && v !== "")
     ).toString();
-    return api
-      .get(`/hod/reports/comparison/pdf${qs ? `?${qs}` : ""}`, { responseType: "blob" })
-      .then((r) => r.data);
+    return api.get(`/hod/reports/comparison/pdf${qs ? `?${qs}` : ""}`, { responseType: "blob" }).then((r) => r.data);
   },
   downloadXlsx: (filters = {}) => {
     const qs = new URLSearchParams(
       Object.entries(filters).filter(([, v]) => v !== null && v !== undefined && v !== "")
     ).toString();
-    return api
-      .get(`/hod/reports/comparison/xlsx${qs ? `?${qs}` : ""}`, { responseType: "blob" })
-      .then((r) => r.data);
+    return api.get(`/hod/reports/comparison/xlsx${qs ? `?${qs}` : ""}`, { responseType: "blob" }).then((r) => r.data);
   },
 };
 
 export const recognitionApi = {
   status: () => api.get("/recognition/status").then((r) => r.data),
-  register: (student_id, name, image_base64) =>
-    api.post("/recognition/register", { student_id, name, image_base64 }).then((r) => r.data),
-  registerMulti: (student_id, name, shots) =>
-    api
-      .post("/recognition/register/multi", {
-        student_id,
-        name,
-        // the front shot doubles as the legacy single image so both code paths
-        // validate against the same picture
-        image_base64: shots.front,
-        images: [
-          { pose: "front", image_base64: shots.front },
-          { pose: "left", image_base64: shots.left },
-          { pose: "right", image_base64: shots.right },
-        ],
-      })
-      .then((r) => r.data),
+  register: (student_id, name, image_base64) => api.post("/recognition/register", { student_id, name, image_base64 }).then((r) => r.data),
+  registerMulti: (student_id, name, shots) => api.post("/recognition/register/multi", {
+    student_id,
+    name,
+    image_base64: shots.front,
+    images: [
+      { pose: "front", image_base64: shots.front },
+      { pose: "left", image_base64: shots.left },
+      { pose: "right", image_base64: shots.right },
+    ],
+  }).then((r) => r.data),
   remove: (student_id) => api.post("/recognition/remove", { student_id }).then((r) => r.data),
   detect: (image_base64) => api.post("/recognition/detect", { image_base64 }).then((r) => r.data),
-  analyze: (image_base64, subject_id, section) =>
-    api.post("/recognition/analyze", { image_base64, subject_id, section }).then((r) => r.data),
+  analyze: (image_base64, subject_id, section) => api.post("/recognition/analyze", { image_base64, subject_id, section }).then((r) => r.data),
 };
 
 export const facesApi = {
-  // Excel roster + ZIP of photos, validated without changing anything
   preview: (rosterFile, photosFile) => {
     const fd = new FormData();
     fd.append("roster", rosterFile);
     fd.append("photos", photosFile);
-    return api
-      .post("/faces/bulk/preview", fd, { headers: { "Content-Type": "multipart/form-data" } })
-      .then((r) => r.data);
+    return api.post("/faces/bulk/preview", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
   },
-  // Actually import the validated faces (overwrite=false keeps existing ones)
   commit: (rosterFile, photosFile, overwrite = false) => {
     const fd = new FormData();
     fd.append("roster", rosterFile);
     fd.append("photos", photosFile);
     fd.append("overwrite", overwrite ? "true" : "false");
-    return api
-      .post("/faces/bulk/commit", fd, { headers: { "Content-Type": "multipart/form-data" } })
-      .then((r) => r.data);
+    return api.post("/faces/bulk/commit", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => r.data);
   },
 };
 
@@ -232,17 +204,13 @@ export const adminApi = {
     const qs = new URLSearchParams(
       Object.entries(filters).filter(([, v]) => v !== null && v !== undefined && v !== "")
     ).toString();
-    return api.get(
-      `/admin/departments/${encodeURIComponent(branch)}/${encodeURIComponent(semester)}${qs ? `?${qs}` : ""}`
-    ).then((r) => r.data);
+    return api.get(`/admin/departments/${encodeURIComponent(branch)}/${encodeURIComponent(semester)}${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
   classOverview: (branch, semester, section, filters = {}) => {
     const qs = new URLSearchParams(
       Object.entries(filters).filter(([, v]) => v !== null && v !== undefined && v !== "")
     ).toString();
-    return api.get(
-      `/admin/classes/${encodeURIComponent(branch)}/${encodeURIComponent(semester)}/${encodeURIComponent(section)}${qs ? `?${qs}` : ""}`
-    ).then((r) => r.data);
+    return api.get(`/admin/classes/${encodeURIComponent(branch)}/${encodeURIComponent(semester)}/${encodeURIComponent(section)}${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
   lowAttendance: (branch, filters = {}) => {
     const qs = new URLSearchParams(

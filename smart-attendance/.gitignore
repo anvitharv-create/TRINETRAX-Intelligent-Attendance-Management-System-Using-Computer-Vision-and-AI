@@ -20,3 +20,4 @@ android/build/
 android/app/build/
 backend/*.db*
 backend/recognition/face_data/
+private-data/
